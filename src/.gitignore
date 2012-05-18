@@ -1,0 +1,4 @@
+*.o
+.dps
+gitbk
+pch.h.gch

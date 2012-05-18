@@ -1,0 +1,31 @@
+gitbk
+=====
+
+backup and restore file system, like git
+Thanks Linus Torvalds
+
+
+how to use
+==================================
+1. create repository
+      gitbk init <repository path>
+
+2. backup
+      gitbk backup <directory path> <repository path>
+
+3. restore
+      gitbk restore <repository path/backups/name/date> <restore path>
+
+
+example
+==================================
+1.    gitbk init /gitbk
+   Now you have /gitbk/backups /gitbk/objects /gitbk/tmp
+
+
+2.    gitbk backup /home/jhon /gitbk
+   Now you have /gitbk/backups/jhon/20120508
+   20120508 is today
+
+3.    gitbk restore /gitbk/backups/jhon/20120508 /home
+   Restore /home/jhon to 20120508
