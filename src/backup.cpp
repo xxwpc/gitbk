@@ -25,77 +25,22 @@
 #include "HashId.h"
 #include "HashSet.h"
 #include "path.h"
-#include "IGbStream.h"
+#include "GbFile.h"
 
 
 
 static boost::shared_mutex        *hash_mutex;
 
 
-
-static void sha256( const void *buf, size_t size, HashId *id )
-{
-   unsigned char     r[32];
-
-   SHA256( reinterpret_cast<const unsigned char *>(buf), size, r );
-
-   id->set( r );
-}
-
-
-
-static boost::filesystem::path store_object( const void *buf, size_t size )
-{
-   static boost::detail::atomic_count count( 0 );
-
-   auto idx = ++count;
-
-   auto s = boost::lexical_cast<std::string>( idx );
-
-   auto tmp_path = path_get( PathType::TMP, s.c_str( ) );
-   auto tmp_name = tmp_path.c_str( );
-
-   FILE *fp = fopen( tmp_name, "wb" );
-   if ( fp == NULL )
-      tmp_path.clear( );
-
-   else
-   {
-      int be;
-      BZFILE *bf = BZ2_bzWriteOpen( &be, fp, 9, 0, 0 );
-      BZ2_bzWrite( &be, bf, const_cast< void * >( buf ), (int)size );
-      BZ2_bzWriteClose( &be, bf, 0,  NULL, NULL );
-      fclose( fp );
-   }
-
-   return tmp_path;
-}
-
-
-
-static int rename_tmp_file( const boost::filesystem::path &tmp, const HashId &id )
-{
-   auto path = id.getStorePath( );
-
-   auto p2 = path.parent_path( );
-   auto p1 = p2.parent_path( );
-
-   boost::filesystem::create_directory( p1 );
-   boost::filesystem::create_directory( p2 );
-
-   boost::system::error_code ec;
-   boost::filesystem::rename( tmp, path );
-
-   return ec == 0;
-}
-
-
-
 static int backup_mem( const void *buf, size_t size, HashId &id )
 {
    int succ;
 
-   sha256( buf, size, &id );
+   {
+      unsigned char r[32];
+      SHA256( reinterpret_cast<const unsigned char *>(buf), size, r );
+      id.set( r );
+   }
 
    {
       boost::shared_lock<boost::shared_mutex> lock( *hash_mutex );
@@ -104,24 +49,21 @@ static int backup_mem( const void *buf, size_t size, HashId &id )
 
    if ( !succ )
    {
-      auto tmp_bz2 = store_object( buf, size );
+      OutBz2File tmpFile;
 
-      succ = !tmp_bz2.empty( );
+      tmpFile.write( buf, size );
+      tmpFile.close( );
 
-      if ( succ )
       {
          boost::unique_lock<boost::shared_mutex> lock( *hash_mutex );
 
          succ = g_hash_set->find( id ) != nullptr;
 
-         if ( !succ && (succ=rename_tmp_file(tmp_bz2,id)) )
+         if ( !succ && (succ=tmpFile.rename( id ) ) )
          {
             id.size = size;
             g_hash_set->insert( id );
          }
-
-         else
-            boost::filesystem::remove( tmp_bz2 );
       }
    }
 
@@ -209,13 +151,10 @@ void BackupFs::onDirBegin( )
    if ( ( _oldAttr != nullptr ) && ( S_ISDIR(_oldAttr->mode)) )
    {
       NodeAttr  attr;
-      IGbStream igs( _oldAttr->hash );
-      std::string l;
-      while ( std::getline(igs, l) )
-      {
-         attr.parse( l.c_str() );
+      InBz2File in( _oldAttr->hash );
+
+      while ( in.parseNodeAttr(&attr) )
          _subAttrList.push_back( attr );
-      }
    }
 
    // 2.

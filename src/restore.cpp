@@ -1,5 +1,5 @@
 /*
- * COPYRIGHT (C) 2012 \u8096\u9009\u6587
+ * COPYRIGHT (C) 2012 肖选文
  *
  * This file is part of gitbk.
  *
@@ -25,8 +25,7 @@
 #include "GitbkFs.h"
 #include "NodeAttr.h"
 #include "mthread.h"
-#include "Bz2File.h"
-#include "IGbStream.h"
+#include "GbFile.h"
 
 
 
@@ -49,69 +48,35 @@ public:
 
 void RestoreFs::onFile( )
 {
-   Bz2File bf( _attr.hash );
+   InBz2File bf( _attr.hash );
 
-   int fo = creat( _path.c_str(), S_IRWXU );
-   if ( fo == -1 )
-      return;
+   OutputFile of( _path.string() );
 
-   char buf[4096];
-
-   while ( true )
-   {
-      auto n = bf.read( buf, sizeof(buf) );
-      if ( n == 0 )
-         break;
-
-      write( fo, buf, n );
-   }
-
-   close( fo );
+   of.write( bf );
 }
 
 
 
 void RestoreFs::onSymlink( )
 {
-   IGbStream igs( _attr.hash );
-   std::string sym;
-   std::getline( igs, sym );
-   symlink( sym.c_str( ), _path.c_str( ) );
+   char buf[PATH_MAX];
+   InBz2File bf( _attr.hash );
+
+   auto n = bf.read( buf, sizeof(buf)-1 );
+   buf[n] = 0;
+
+   symlink( buf, _path.c_str( ) );
 }
 
 
 
 void RestoreFs::onDirBegin( )
 {
-   Bz2File bf( _attr.hash );
-
-   std::string s;
-
-   while ( true )
-   {
-      char buf[512];
-      int n = bf.read( buf, sizeof(buf) );
-      if ( n == 0 )
-    	  break;
-
-      s.append( buf, n );
-   }
-
+   InBz2File bf( _attr.hash );
    NodeAttr attr;
-   const char *p = s.c_str( );
-   const char *e = p + s.length( );
 
-   while ( p < e )
-   {
-      attr.parse( p );
+   while ( bf.parseNodeAttr(&attr) )
       subPush( new RestoreFs( attr, _path ) );
-
-      const char *pn = strchr( p, '\n' );
-      if ( pn == nullptr )
-    	  break;
-
-      p = pn + 1;
-   }
 
    boost::filesystem::create_directories( _path );
 }
