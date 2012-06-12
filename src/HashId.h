@@ -20,28 +20,42 @@
 #pragma once
 
 
+
+class InputFile;
+class OutputFile;
+
+
+
 struct HashId
 {
    bool operator < ( const HashId &o ) const
    {
-      return memcmp( hash, o.hash, 32 ) < 0;
+      return memcmp( hash, o.hash, 64 ) < 0;
    }
 
-   void set( const unsigned char h[32] )
+   void setSha256( const unsigned char [32] );
+   void getSha256( unsigned char [32] ) const;
+
+   void setString( const char *str )
    {
-      memcpy( hash, h, sizeof(hash) );
+      memcpy( hash, str, 64 );
    }
 
-   void setString( const char * );
+   size_t toString( char *buf ) const
+   {
+      memcpy( buf, hash, 64 );
+      return 64;
+   }
 
-   size_t toObjPath( char * ) const;
-
-   size_t toString( char * ) const;
+   // size_t toObjPath( char * ) const;
 
 
    boost::filesystem::path getStorePath( ) const;
 
-   unsigned char              hash[32];
+   bool load( InputFile & );
+   void store( OutputFile & ) const;
+
+   char                       hash[64];
    std::uint64_t              size;
    std::uint64_t              reserve;
 };
@@ -50,3 +64,4 @@ struct HashId
 
 std::basic_istream<char> & operator >> ( std::basic_istream<char> &, HashId & );
 std::basic_ostream<char> & operator << ( std::basic_ostream<char> &, const HashId & );
+

@@ -39,7 +39,7 @@ static int backup_mem( const void *buf, size_t size, HashId &id )
    {
       unsigned char r[32];
       SHA256( reinterpret_cast<const unsigned char *>(buf), size, r );
-      id.set( r );
+      id.setSha256( r );
    }
 
    {

@@ -21,6 +21,7 @@
 
 #include "HashSet.h"
 #include "path.h"
+#include "GbFile.h"
 
 
 
@@ -65,19 +66,14 @@ void HashSet::insert( const HashId &id )
 
 bool HashSet::load( )
 {
-#if 0
-   std::ifstream is( _filename );
-   if ( !is )
-      return false;
+   InputFile   in( _filename );
+   HashId      id;
 
-   HashId id;
-   while ( is )
-   {
-      is >> id;
+   while ( id.load( in ) )
       _set.insert( id );
-   }
 
-#else
+
+/*
    FILE *fp = fopen( _filename.c_str( ), "rb" );
    if ( fp == NULL )
       return false;
@@ -88,8 +84,7 @@ bool HashSet::load( )
       _set.insert( id );
 
    fclose( fp );
-#endif
-
+*/
    return true;
 }
 
@@ -97,6 +92,11 @@ bool HashSet::load( )
 
 bool HashSet::store( ) const
 {
+   OutputFile out( _filename );
+
+   for ( const auto &id : _set )
+      id.store( out );
+/*
    std::ofstream os( _filename );
 
    if ( !os )
@@ -104,7 +104,7 @@ bool HashSet::store( ) const
 
    for ( const auto &id : _set )
       os << id;
-
+*/
    return true;
 }
 

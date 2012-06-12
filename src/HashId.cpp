@@ -1,5 +1,5 @@
 /*
- * COPYRIGHT (C) 2012 \u8096\u9009\u6587
+ * COPYRIGHT (C) 2012 肖选文
  *
  * This file is part of gitbk.
  *
@@ -20,6 +20,8 @@
 #include "pch.h"
 #include "HashId.h"
 #include "path.h"
+#include "GbFile.h"
+
 
 
 static const char hex[16] =
@@ -53,54 +55,24 @@ static unsigned char toCharValue( const char *s )
 
 
 
-void HashId::setString( const char *s )
-{
-   for ( int i = 0; i < 32; s += 2, ++i )
-      hash[i] = toCharValue( s );
-}
-
-
-
-size_t HashId::toString( char *buf ) const
+void HashId::setSha256( const unsigned char sha256[32] )
 {
    for ( int i = 0; i < 32; ++i )
    {
-      unsigned char c = hash[i];
-      *buf++ = hex[c>>4];
-      *buf++ = hex[c&15];
+      unsigned char c = sha256[i];
+
+      int idx = i * 2;
+      hash[idx]   = hex[c>>4];
+      hash[idx+1] = hex[c&15];
    }
-
-   *buf = 0;
-
-   return sizeof( hash ) * 2;
 }
 
 
 
-size_t HashId::toObjPath( char *path ) const
+void HashId::getSha256( unsigned char sha256[32] ) const
 {
-   unsigned char c = hash[0];
-   *path++ = hex[c>>4];
-   *path++ = hex[c&15];
-
-   *path++ = '/';
-
-   c = hash[1];
-   *path++ = hex[c>>4];
-   *path++ = hex[c&15];
-
-   *path++ = '/';
-
-   for ( int i = 2; i < 32; ++i )
-   {
-      c = hash[i];
-      *path++ = hex[c>>4];
-      *path++ = hex[c&15];
-   }
-
-   *path = 0;
-
-   return sizeof( hash ) * 2 + 2;
+   for ( int i = 0; i < 64; i += 2 )
+      sha256[i] = toCharValue( hash + i );
 }
 
 
@@ -108,24 +80,54 @@ size_t HashId::toObjPath( char *path ) const
 boost::filesystem::path HashId::getStorePath( ) const
 {
 	boost::filesystem::path path = path_get( PathType::OBJ, nullptr );
-	char buf[80];
-	toObjPath( buf );
+	char buf[67];
+   buf[0] = hash[0];
+   buf[1] = hash[1];
+   buf[2] = '/';
+   buf[3] = hash[2];
+   buf[4] = hash[3];
+   buf[5] = '/';
+   memcpy( buf+6, hash+4, 60 );
+   buf[66] = 0;
+
 	path /= buf;
 	return path;
 }
 
 
 
-std::basic_istream<char> & operator >> ( std::basic_istream<char> &is, HashId &id )
+struct IdStroe
 {
-   is.read( reinterpret_cast<char*>(&id), sizeof(id) );
-   return is;
+   unsigned char  sha256[32];
+   std::uint64_t  size;
+   std::uint64_t  reserve;
+};
+
+
+
+bool HashId::load ( InputFile &in )
+{
+   IdStroe store;
+
+   if ( in.read( static_cast<void*>(&store), sizeof(store) ) != sizeof(store) )
+      return false;
+
+   setSha256( store.sha256 );
+   size    = store.size;
+   reserve = store.reserve;
+
+   return true;
 }
 
 
 
-std::basic_ostream<char> & operator << ( std::basic_ostream<char> &os, const HashId &id )
+void HashId::store( OutputFile &out ) const
 {
-   os.write( reinterpret_cast<const char *>( &id ), sizeof(id) );
-   return os;
+   IdStroe store;
+   getSha256( store.sha256 );
+   store.size    = size;
+   store.reserve = reserve;
+
+   out.write( static_cast<void *>( &store ), sizeof(store) );
 }
+
