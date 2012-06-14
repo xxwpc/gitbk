@@ -1,5 +1,5 @@
 /*
- * COPYRIGHT (C) 2012 \u8096\u9009\u6587
+ * COPYRIGHT (C) 2012 肖选文
  *
  * This file is part of gitbk.
  *
@@ -82,10 +82,10 @@ void RunMt( GitbkFs *r )
 
    int n = sysconf( _SC_NPROCESSORS_ONLN );
 
-   if ( n == 1 )
-	   n = 2;
-   else if ( n == 2 )
-	   n = 3;
+   if ( n <= 4 )
+      ++n;
+   else
+	   n = n * 5 / 4;
 
    std::cout << "Use " << n << " work threads." << std::endl;
 

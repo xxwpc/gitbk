@@ -66,7 +66,7 @@ public:
    bool parseNodeAttr( NodeAttr * );
 
 protected:
-   virtual size_t readBuf( void *, size_t );
+   virtual unsigned readBuf( void *, unsigned );
 
    unsigned       _rawBufPos;
 
@@ -84,7 +84,7 @@ public:
    ~InBz2File( );
 
 protected:
-   size_t readBuf( void *, size_t ) override;
+   unsigned readBuf( void *, unsigned ) override;
 
    bz_stream      _bzStream;
    char           _bzBuf[16*1024];

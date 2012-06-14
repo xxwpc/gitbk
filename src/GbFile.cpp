@@ -74,9 +74,14 @@ size_t InputFile::read( void *buf, size_t size )
 
 
 
-size_t InputFile::readBuf( void *buf, size_t size )
+unsigned InputFile::readBuf( void *buf, unsigned size )
 {
-   return ::read( _fd, buf, size );
+   auto s = ::read( _fd, buf, size );
+
+   if ( s == static_cast< ssize_t >( -1 ) )
+      return 0;
+
+   return static_cast< unsigned >( s );
 }
 
 
@@ -124,11 +129,8 @@ InBz2File::~InBz2File( )
 
 
 
-size_t InBz2File::readBuf( void *buf, size_t size )
+unsigned InBz2File::readBuf( void *buf, unsigned size )
 {
-   // bug for 64 bit
-   static_assert( sizeof(size_t) == sizeof(unsigned), "Can't support 64 bit now" );
-
    _bzStream.next_out  = static_cast< char * >( buf );
    _bzStream.avail_out = size;
 

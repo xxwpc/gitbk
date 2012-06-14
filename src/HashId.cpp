@@ -71,8 +71,8 @@ void HashId::setSha256( const unsigned char sha256[32] )
 
 void HashId::getSha256( unsigned char sha256[32] ) const
 {
-   for ( int i = 0; i < 64; i += 2 )
-      sha256[i] = toCharValue( hash + i );
+   for ( int i = 0; i < 32; ++i )
+      sha256[i] = toCharValue( hash + i*2 );
 }
 
 

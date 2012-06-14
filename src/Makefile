@@ -28,9 +28,8 @@ clean:
 -include .dps/*
 
 .cpp.o :
-	@echo "[compile] $<"
-	$(CXX) $(CXXFLAGS) -MMD -MF .dps/$<.dps -c $< -o $@
-	@echo
+	@echo "[compile $<] $(CXX) $(CXXFLAGS) -MMD -MF .dps/$<.dps -c $< -o $@"
+	@$(CXX) $(CXXFLAGS) -MMD -MF .dps/$<.dps -c $< -o $@
 
 .dps :
 	mkdir -p .dps

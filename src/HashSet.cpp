@@ -1,5 +1,5 @@
 /*
- * COPYRIGHT (C) 2012 \u8096\u9009\u6587
+ * COPYRIGHT (C) 2012 肖选文
  *
  * This file is part of gitbk.
  *
@@ -72,19 +72,6 @@ bool HashSet::load( )
    while ( id.load( in ) )
       _set.insert( id );
 
-
-/*
-   FILE *fp = fopen( _filename.c_str( ), "rb" );
-   if ( fp == NULL )
-      return false;
-
-   HashId id;
-
-   while ( fread( &id, sizeof(id), 1, fp ) == 1 )
-      _set.insert( id );
-
-   fclose( fp );
-*/
    return true;
 }
 
@@ -92,20 +79,12 @@ bool HashSet::load( )
 
 bool HashSet::store( ) const
 {
-   OutputFile out( _filename );
+   OutputFile out;
 
    for ( const auto &id : _set )
       id.store( out );
-/*
-   std::ofstream os( _filename );
 
-   if ( !os )
-      return false;
-
-   for ( const auto &id : _set )
-      os << id;
-*/
-   return true;
+   return out.rename( _filename );
 }
 
 
@@ -124,3 +103,4 @@ void load_hash_set( )
       g_hash_set = phs.get( );
    }
 }
+
