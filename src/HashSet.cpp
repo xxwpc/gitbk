@@ -29,19 +29,14 @@ HashSet *g_hash_set = NULL;
 
 
 
-HashSet::HashSet( const std::string &fn )
-   : _filename( fn )
+HashSet::HashSet( )
 {
-   load( );
-   _old_size = _set.size( );
 }
 
 
 
 HashSet::~HashSet( )
 {
-   if ( _old_size != _set.size( ) )
-      store( );
 }
 
 
@@ -66,11 +61,13 @@ void HashSet::insert( const HashId &id )
 
 bool HashSet::load( )
 {
-   InputFile   in( _filename );
+   InputFile   in( path_get( PathType::OBJ, "index" ).string( ) );
    HashId      id;
 
    while ( id.load( in ) )
       _set.insert( id );
+
+   _old_size = _set.size( );
 
    return true;
 }
@@ -84,23 +81,39 @@ bool HashSet::store( ) const
    for ( const auto &id : _set )
       id.store( out );
 
-   return out.rename( _filename );
+   return out.rename( path_get( PathType::OBJ, "index" ).string( ) );
 }
 
 
 
-void load_hash_set( )
+void load_hash_set( bool loadIndex )
 {
-   static bool load = false;
+   BOOST_ASSERT( g_hash_set == nullptr );
 
-   if ( !load )
-   {
-      load = true;
+   g_hash_set = new HashSet( );
+   if ( loadIndex )
+      g_hash_set->load( );
+}
 
-      boost::filesystem::path path = path_get( PathType::OBJ, "index" );
 
-      static std::auto_ptr<HashSet> phs( new HashSet( path.string() ) );
-      g_hash_set = phs.get( );
-   }
+
+bool store_hash_set( bool del )
+{
+   BOOST_ASSERT( g_hash_set != nullptr );
+
+   bool rst = g_hash_set->store( );
+
+   if ( del )
+      delete g_hash_set;
+
+   return rst;
+}
+
+
+
+void free_hash_set( )
+{
+   BOOST_ASSERT( g_hash_set != nullptr );
+   delete g_hash_set;
 }
 

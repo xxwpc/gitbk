@@ -1,6 +1,6 @@
 SOURCES = main.cpp init.cpp backup.cpp restore.cpp clean.cpp GbFile.cpp \
           mthread.cpp HashId.cpp HashSet.cpp path.cpp GitbkFs.cpp \
-          NodeAttr.cpp SubCmd.cpp
+          NodeAttr.cpp SubCmd.cpp prune.cpp
 
 all: gitbk
 

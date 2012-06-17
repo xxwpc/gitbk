@@ -284,7 +284,7 @@ int backupProc( const std::vector<std::string> &args )
 {
    if ( args.size() < 3 )
    {
-      std::cout << "bkfs backup src dest" << std::endl;
+      std::cout << "gitbk backup src dest" << std::endl;
       return 1;
    }
 
@@ -312,12 +312,15 @@ int backupProc( const std::vector<std::string> &args )
       auto succ = getLastStore( s, &oldAttr );
       BackupFs bd( na, s, succ?&oldAttr:nullptr );
       RunMt( &bd );
-      save_result( bd );
+      if ( store_hash_set( false ) )
+         save_result( bd );
    }
    else
    {
       std::cerr << "Can't stat " << s;
    }
+
+   free_hash_set( );
 
    return 0;
 }

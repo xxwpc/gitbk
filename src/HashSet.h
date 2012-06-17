@@ -28,19 +28,17 @@
 class HashSet
 {
 public:
-   HashSet( const std::string & );
+   HashSet( );
    ~HashSet( );
 
    const HashId * find( const HashId & ) const;
    void insert( const HashId & );
 
-private:
    bool load( );
    bool store( ) const;
 
 private:
    std::set< HashId >   _set;
-   std::string          _filename;
 
    std::set<HashId>::size_type   _old_size;
 };
@@ -49,4 +47,8 @@ private:
 
 extern HashSet *g_hash_set;
 
-extern void load_hash_set( );
+
+extern void load_hash_set( bool = true );
+extern bool store_hash_set( bool = true );
+extern void free_hash_set( );
+
