@@ -1,6 +1,4 @@
-SOURCES = main.cpp init.cpp backup.cpp restore.cpp clean.cpp GbFile.cpp \
-          mthread.cpp HashId.cpp HashSet.cpp path.cpp GitbkFs.cpp \
-          NodeAttr.cpp SubCmd.cpp prune.cpp
+SOURCES = $(wildcard *.cpp)
 
 all: gitbk
 
@@ -16,14 +14,14 @@ DEPENDS = $(foreach src, $(SOURCES), $(basename $(src)).dps )
 pch.h.gch : pch.h
 	$(CXX) $(CXXFLAGS) $<
 
-$(OBJECTS): .dps pch.h.gch
+$(OBJECTS): pch.h.gch |.dps
 
 gitbk: $(OBJECTS)
 	@echo "[link] $@"
 	$(CXX) -g $(OBJECTS) $(STDSRC) -o $@ -lbz2 -lpthread -lboost_thread-mt -lboost_system-mt -lboost_filesystem-mt -lboost_iostreams-mt -lboost_date_time-mt -lssl
 
 clean:
-	rm -rf *.o *.S .dps gitbk pch.h.gch
+	rm -rfv *.o *.S .dps gitbk pch.h.gch
 
 -include .dps/*
 
@@ -33,4 +31,3 @@ clean:
 
 .dps :
 	mkdir -p .dps
-	@echo
