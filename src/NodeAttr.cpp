@@ -1,5 +1,5 @@
 /*
- * COPYRIGHT (C) 2012 \u8096\u9009\u6587
+ * COPYRIGHT (C) 2012 肖选文
  *
  * This file is part of gitbk.
  *
@@ -20,24 +20,6 @@
 #include "pch.h"
 
 #include "NodeAttr.h"
-
-
-
-static size_t timeToStr( char *buf, time_t t )
-{
-   struct tm tm;
-   localtime_r( &t, &tm );
-   return strftime( buf, 24, "%Y-%m-%d %H:%M:%S ", &tm );
-}
-
-
-
-static time_t timeFromStr( const char *s )
-{
-   struct tm tm;
-   strptime( s, "%Y-%m-%d %H:%M:%S ", &tm );
-   return mktime( &tm );
-}
 
 
 
@@ -69,7 +51,7 @@ size_t NodeAttr::toString( char *buf ) const
       buf += sprintf( buf, "%s ", grp.gr_name );
    }
 
-   buf += timeToStr( buf, mtime );
+   buf += sprintf( buf, "%ld ", mtime );
    buf += sprintf( buf, "%s\n", name );
 
    return buf - b;
@@ -96,10 +78,13 @@ bool NodeAttr::parse( const char *attr )
    sscanf( attr, "%s ", buf );
    struct group *gp = getgrnam( buf );
    gid = gp->gr_gid;
-   attr += strlen( buf ) + 1;
+   attr += strlen( buf );
 
-   mtime = timeFromStr( attr );
-   attr += 20;
+   mtime = 0;
+   while ( *++attr != ' ' )
+      mtime = mtime * 10 + *attr - '0';
+
+   ++attr;
 
    const char *e = strchr( attr, '\n' );
    if ( e == NULL )
@@ -133,3 +118,4 @@ bool NodeAttr::stat( const boost::filesystem::path &path )
 
    return true;
 }
+
