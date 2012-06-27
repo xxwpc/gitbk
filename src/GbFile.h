@@ -26,6 +26,9 @@
 
 class GbFile
 {
+protected:
+   enum { BUF_SIZE = 128*1024 };
+
 public:
    const std::string & getFilename( )
    {
@@ -42,7 +45,7 @@ protected:
    virtual ~GbFile( )
    { }
 
-   char           _rawBuf[16*1024];
+   char           _rawBuf[BUF_SIZE];
    unsigned       _rawBufSize;
 
    int            _fd;
@@ -87,7 +90,7 @@ protected:
    unsigned readBuf( void *, unsigned ) override;
 
    bz_stream      _bzStream;
-   char           _bzBuf[16*1024];
+   char           _bzBuf[BUF_SIZE];
 };
 
 
@@ -132,6 +135,6 @@ protected:
    void onClose( ) override;
 
    bz_stream      _bzStream;
-   char           _bzBuf[16*1024];
+   char           _bzBuf[BUF_SIZE];
 };
 
