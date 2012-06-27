@@ -27,73 +27,44 @@ size_t NodeAttr::toString( char *buf ) const
 {
    char *b = buf;
 
-   char buffer[512];
-
    buf += hash.toString( buf );
-   buf += sprintf( buf, " %06o ",  mode );
-
-   {
-      struct passwd pwd;
-      struct passwd *result;
-      getpwuid_r( uid, &pwd, buffer, 512, &result );
-      if ( result == nullptr )
-         return 0;
-      buf += sprintf( buf, "%s ", pwd.pw_name );
-   }
-
-   {
-      struct group grp;
-      struct group *result;
-      getgrgid_r( gid, &grp, buffer, 512, &result );
-      if ( result == nullptr )
-         return 0;
-
-      buf += sprintf( buf, "%s ", grp.gr_name );
-   }
-
-   buf += sprintf( buf, "%ld ", mtime );
-   buf += sprintf( buf, "%s\n", name );
+   buf += sprintf( buf, " %06o %s %s %ld %s\n", mode, user, group, mtime, name );
 
    return buf - b;
 }
 
 
 
-//
 bool NodeAttr::parse( const char *attr )
 {
-   char buf[256];
+   char *p;
+   char c;
 
    hash.setString( attr );
-   attr += 65;
+   attr += 64;
 
-   sscanf( attr, "%o ", &mode );
-   attr += 7;
+   mode = 0;
+   while ( (c=*++attr) != ' ' )
+      mode = mode * 8 + c - '0';
 
-   sscanf( attr, "%s ", buf );
-   struct passwd *pw = getpwnam( buf );
-   uid = pw->pw_uid;
-   attr += strlen( buf ) + 1;
+   p = user;
+   while ( (c=*++attr) != ' ' )
+      *p++ = c;
+   *p = 0;
 
-   sscanf( attr, "%s ", buf );
-   struct group *gp = getgrnam( buf );
-   gid = gp->gr_gid;
-   attr += strlen( buf );
+   p = group;
+   while ( (c=*++attr) != ' ' )
+      *p++ = c;
+   *p = 0;
 
    mtime = 0;
-   while ( *++attr != ' ' )
-      mtime = mtime * 10 + *attr - '0';
+   while ( (c=*++attr) != ' ' )
+      mtime = mtime * 10 + c - '0';
 
-   ++attr;
-
-   const char *e = strchr( attr, '\n' );
-   if ( e == NULL )
-      strcpy( name, attr );
-   else
-   {
-      memcpy( name, attr, e - attr );
-      name[e-attr] = 0;
-   }
+   p = name;
+   while ( (c=*++attr) != '\n' )
+      *p++ = c;
+   *p = 0;
 
    return true;
 }
@@ -110,9 +81,30 @@ bool NodeAttr::stat( const boost::filesystem::path &path )
 
    strcpy( name, path.filename().c_str() );
 
+   char buf[512];
+
    mode   = st.st_mode;
-   uid    = st.st_uid;
-   gid    = st.st_gid;
+
+   {
+      struct passwd pwd;
+      struct passwd *result;
+      getpwuid_r( st.st_uid, &pwd, buf, 512, &result );
+      if ( result == nullptr )
+         return false;
+
+      strcpy( user, pwd.pw_name );
+   }
+
+   {
+      struct group grp;
+      struct group *result;
+      getgrgid_r( st.st_gid, &grp, buf, 512, &result );
+      if ( result == nullptr )
+         return false;
+
+      strcpy( group, grp.gr_name );
+   }
+
    mtime  = st.st_mtime;
    size   = st.st_size;
 

@@ -1,5 +1,5 @@
 /*
- * COPYRIGHT (C) 2012 \u8096\u9009\u6587
+ * COPYRIGHT (C) 2012 肖选文
  *
  * This file is part of gitbk.
  *
@@ -28,8 +28,8 @@ struct NodeAttr
    HashId          hash;
    char            name[256];
    mode_t          mode;
-   uid_t           uid;
-   gid_t           gid;
+   char            user[256];
+   char            group[256];
    time_t          mtime;
    std::uint64_t   size;
 
@@ -53,3 +53,4 @@ struct NodeAttr
    bool parse( const char * );
    bool stat( const boost::filesystem::path & );
 };
+
