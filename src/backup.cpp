@@ -168,7 +168,7 @@ void BackupFs::onDirBegin( )
       auto &entry = *dir_itr;
       auto &path = entry.path( );
 
-      if ( na.stat( path ) )
+      if ( na.stat( path.c_str( ) ) )
       {
          const NodeAttr *attr = findOldAttr( na );
          GitbkFs *node = new BackupFs( na, path, attr );
@@ -306,7 +306,7 @@ int backupProc( const std::vector<std::string> &args )
       s.resize( s.size() - 1 );
 
    NodeAttr na;
-   if ( na.stat(s) )
+   if ( na.stat( s.c_str( ) ) )
    {
       NodeAttr oldAttr;
       auto succ = getLastStore( s, &oldAttr );

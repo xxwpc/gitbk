@@ -19,38 +19,13 @@
 
 #pragma once
 
-#include "HashId.h"
+
+void user_info_init( );
 
 
+const char * user_name( uid_t );
+uid_t user_id( const char * );
 
-struct NodeAttr
-{
-   HashId          hash;
-   char            name[256];
-   mode_t          mode;
-   char            user[256];
-   char            group[256];
-   time_t          mtime;
-   std::uint64_t   size;
-
-   NodeAttr( )
-   {
-      memset( this, 0, sizeof(*this) );
-   }
-
-   void clear( )
-   {
-      memset( this, 0, sizeof(*this) );
-   }
-
-   bool operator < ( const NodeAttr &o ) const
-   {
-      return strcmp( name, o.name ) < 0;
-   }
-
-   size_t toString( char *buf ) const;
-
-   bool parse( const char * );
-   bool stat( const char * );
-};
+const char * group_name( gid_t );
+gid_t group_id( const char * );
 

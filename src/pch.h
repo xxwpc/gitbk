@@ -27,12 +27,14 @@
 #include <bzlib.h>
 #include <openssl/sha.h>
 #include <utime.h>
+#include <utmp.h>
 
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
 #include <vector>
 #include <iostream>
+#include <list>
 
 #include <boost/assert.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
@@ -47,6 +49,7 @@
 #include <boost/spirit/include/classic_file_iterator.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/regex.hpp>
 
 extern void verbose( const char *fmt, ... );
 extern void verbose_err( const char *fmt, ... );

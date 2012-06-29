@@ -20,6 +20,8 @@
 #include "pch.h"
 #include "gitbk.h"
 #include "SubCmd.h"
+#include "UserInfo.h"
+
 
 
 SubCmd *g_gitbkCmds;
@@ -61,6 +63,7 @@ int main( int argc, char *argv[] )
 
    try
    {
+      user_info_init( );
       return SubCmd::procCmd( g_gitbkCmds, args );
    }
    catch ( std::exception &e )

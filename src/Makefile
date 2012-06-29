@@ -18,7 +18,7 @@ $(OBJECTS): pch.h.gch |.dps
 
 gitbk: $(OBJECTS)
 	@echo "[link] $@"
-	$(CXX) -g $(OBJECTS) $(STDSRC) -o $@ -lbz2 -lpthread -lboost_thread-mt -lboost_system-mt -lboost_filesystem-mt -lboost_iostreams-mt -lboost_date_time-mt -lssl
+	$(CXX) -g $(OBJECTS) $(STDSRC) -o $@ -lbz2 -lpthread -lboost_thread-mt -lboost_system-mt -lboost_filesystem-mt -lboost_iostreams-mt -lboost_date_time-mt -lboost_regex-mt -lssl
 
 clean:
 	rm -rfv *.o *.S .dps gitbk pch.h.gch

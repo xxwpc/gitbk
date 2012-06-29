@@ -20,6 +20,7 @@
 #include "pch.h"
 
 #include "NodeAttr.h"
+#include "UserInfo.h"
 
 
 
@@ -71,39 +72,20 @@ bool NodeAttr::parse( const char *attr )
 
 
 
-bool NodeAttr::stat( const boost::filesystem::path &path )
+bool NodeAttr::stat( const char *path )
 {
    struct stat st;
-   if ( ::lstat( path.c_str(), &st ) != 0 )
+   if ( ::lstat( path, &st ) != 0 )
    {
       return false;
    }
 
-   strcpy( name, path.filename().c_str() );
-
-   char buf[512];
+   strcpy( name, basename( path ) );
 
    mode   = st.st_mode;
 
-   {
-      struct passwd pwd;
-      struct passwd *result;
-      getpwuid_r( st.st_uid, &pwd, buf, 512, &result );
-      if ( result == nullptr )
-         return false;
-
-      strcpy( user, pwd.pw_name );
-   }
-
-   {
-      struct group grp;
-      struct group *result;
-      getgrgid_r( st.st_gid, &grp, buf, 512, &result );
-      if ( result == nullptr )
-         return false;
-
-      strcpy( group, grp.gr_name );
-   }
+   strcpy( user, user_name( st.st_uid ) );
+   strcpy( group, group_name( st.st_gid ) );
 
    mtime  = st.st_mtime;
    size   = st.st_size;

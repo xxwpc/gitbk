@@ -32,7 +32,7 @@ static char cur_path[PATH_MAX];
 static const char *filename;
 
 
-void findDir( const NodeAttr &attr )
+static void findDir( const NodeAttr &attr )
 {
    char *pend = cur_path + strlen(cur_path);
    *pend = '/';
@@ -104,7 +104,7 @@ static void findAll( const std::string &path )
 
 
 
-int findProc( const std::vector<std::string> &args )
+static int findProc( const std::vector<std::string> &args )
 {
    if ( args.size() < 3 )
    {
