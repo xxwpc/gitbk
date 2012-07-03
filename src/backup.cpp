@@ -26,6 +26,7 @@
 #include "HashSet.h"
 #include "path.h"
 #include "GbFile.h"
+#include "DirItr.h"
 
 
 
@@ -87,7 +88,16 @@ private:
    void onDirBegin( ) override;
    void onDirEnd( ) override;
 
-   const NodeAttr * findOldAttr( const NodeAttr & ) const;
+   void setHash( const HashId &hash )
+   {
+      _attr.hash = hash;
+      _success = true;
+   }
+
+   void setOldAttr( const NodeAttr *attr )
+   {
+      _oldAttr = attr;
+   }
 
 private:
    const NodeAttr         *_oldAttr;
@@ -157,24 +167,54 @@ void BackupFs::onDirBegin( )
          _subAttrList.push_back( attr );
    }
 
+
+   auto old_itr = _subAttrList.begin( );
+   auto old_end = _subAttrList.end( );
+   const NodeAttr *old_ptr = nullptr;
+   if ( old_itr != old_end )
+      old_ptr = &*old_itr;
+
    // 2.
-   boost::filesystem::directory_iterator dir_itr( _path );
-   boost::filesystem::directory_iterator dir_end;
+   DirectoryIterator dir_itr( _path.string( ) );
 
-   NodeAttr na;
-
-   for ( ; dir_itr != dir_end; ++dir_itr )
+   while ( dir_itr.next( ) )
    {
-      auto &entry = *dir_itr;
-      auto &path = entry.path( );
+      const NodeAttr &attr = dir_itr.attr( );
 
-      if ( na.stat( path.c_str( ) ) )
+      BackupFs *node = new BackupFs( attr, _path/attr.name, nullptr );
+
+      int cmpRst = -1;
+      while ( old_ptr != nullptr )
       {
-         const NodeAttr *attr = findOldAttr( na );
-         GitbkFs *node = new BackupFs( na, path, attr );
+         cmpRst = strcmp( attr.name, old_ptr->name );
+         if ( cmpRst > 0 )
+         {
+            if ( ++old_itr != old_end )
+               old_ptr = &*old_itr;
+            else
+               old_ptr = nullptr;
+            continue;
+         }
 
-         subPush( node );
+         if ( cmpRst == 0 )
+         {
+            if ( S_ISREG( attr.mode ) )
+            {
+               if ( S_ISREG( old_ptr->mode )
+                  && ( attr.size == g_hash_set->find(old_ptr->hash)->size )
+                  && ( attr.mtime == old_ptr->mtime ) )
+               {
+                     node->setHash( old_ptr->hash );
+               }
+            }
+            else
+               node->setOldAttr( old_ptr );
+         }
+
+         break;
       }
+
+      subPush( node );
    }
 }
 
@@ -182,18 +222,11 @@ void BackupFs::onDirBegin( )
 
 void BackupFs::onDirEnd( )
 {
-   subSort( );
-
    char buf[512];
    std::string str;
 
-   auto itr( _sub.begin( ) );
-   auto end( _sub.end( ) );
-
-   for ( ; itr != end; ++itr )
+   for ( auto ptr : _sub )
    {
-      auto ptr = *itr;
-
       if ( ptr->success( ) )
       {
          ptr->toString( buf );
@@ -204,19 +237,6 @@ void BackupFs::onDirEnd( )
    }
 
    _success = backup_mem( str.c_str(), str.length(), _attr.hash );
-}
-
-
-
-const NodeAttr * BackupFs::findOldAttr( const NodeAttr &attr ) const
-{
-   for ( const auto &at : _subAttrList )
-   {
-      if ( strcmp(at.name, attr.name) == 0 )
-         return &at;
-   }
-
-   return nullptr;
 }
 
 
@@ -328,3 +348,4 @@ int backupProc( const std::vector<std::string> &args )
 
 
 static SubCmd initCmd( &g_gitbkCmds, "backup", backupProc );
+

@@ -62,6 +62,9 @@ void RunListAdd( GitbkFs **rl, int i )
 
    for ( ; i > 0; ++rl, --i )
    {
+      if ( (*rl)->success( ) )
+         continue;
+
       (*rl)->next = list_head;
       list_head = *rl;
       sem_post( &list_count );

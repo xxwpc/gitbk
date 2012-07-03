@@ -1,5 +1,5 @@
 /*
- * COPYRIGHT (C) 2012 \u8096\u9009\u6587
+ * COPYRIGHT (C) 2012 肖选文
  *
  * This file is part of gitbk.
  *
@@ -23,15 +23,6 @@
 #include "mthread.h"
 
 
-/*
-static size_t timeToStr( char *buf, time_t t )
-{
-   struct tm tm;
-   localtime_r( &t, &tm );
-   return strftime( buf, 24, "%Y-%m-%d %H:%M:%S ", &tm );
-}
-*/
-
 
 
 GitbkFs::GitbkFs( const NodeAttr &attr, const boost::filesystem::path &path )
@@ -51,63 +42,6 @@ GitbkFs::~GitbkFs( )
 
 
 
-/*
-size_t RunFs::toString( char *buf ) const
-{
-   char *b = buf;
-
-   buf += _attr.hash.toString( buf );
-   buf += sprintf( buf, " %06o ", _mode );
-
-   auto p1 = getpwuid( _uid );
-   if ( p1 == NULL )
-   {
-      switch ( errno )
-      {
-      case EINTR:
-         BOOST_ASSERT( false );
-         break;
-
-      case EMFILE:
-         BOOST_ASSERT( false );
-         break;
-
-      case ENFILE:
-         BOOST_ASSERT( false );
-         break;
-
-      case ENOMEM:
-         BOOST_ASSERT( false );
-         break;
-
-      case ERANGE:
-         BOOST_ASSERT( false );
-         break;
-      }
-   }
-
-   buf += sprintf( buf, "%s ", p1->pw_name );
-   auto p2 = getgrgid( _gid );
-   buf += sprintf( buf, "%s ", p2->gr_name );
-   buf += timeToStr( buf, _mtime );
-   buf += sprintf( buf, "%s\n", _path.filename().c_str() );
-
-   return buf - b;
-}
-*/
-
-
-
-bool GitbkFs::cmp( GitbkFs *pa, GitbkFs *pb )
-{
-   if ( pa->_success != pb->_success )
-      return pa->_success > pb->_success;
-
-   return pa->_path < pb->_path;
-}
-
-
-
 void GitbkFs::onSubComplete( )
 {
    assert( _cnt > 0 );
@@ -120,49 +54,15 @@ void GitbkFs::onSubComplete( )
 }
 
 
-/*
-RunFsDir::RunFsDir( const boost::filesystem::path &path )
-   : ScanFs( path )
-   , _firstRun( true )
-{
-}
-
-
-
-RunFsDir::~RunFsDir( )
-{
-}
-
-
-
-void RunFsDir::run( )
-{
-   if ( _firstRun )
-   {
-      _firstRun = false;
-      before( );
-   }
-   else
-   {
-      after( );
-      complete( );
-   }
-}
-*/
 
 
 void GitbkFs::subPush( GitbkFs *rf )
 {
    rf->setParent( this );
    _sub.push_back( rf );
-   ++_cnt;
-}
 
-
-
-void GitbkFs::subSort( )
-{
-   std::sort( _sub.begin(), _sub.end(), cmp );
+   if ( !rf->_success )
+      ++_cnt;
 }
 
 
@@ -175,10 +75,10 @@ void GitbkFs::run( )
       {
          _first = false;
          onDirBegin( );
-         auto siz = _sub.size( );
-         if ( siz > 0 )
+
+         if ( _cnt > 0 )
          {
-            RunListAdd( (GitbkFs**)&_sub[0], siz );
+            RunListAdd( (GitbkFs**)&_sub[0], _sub.size( ) );
             return;
          }
       }

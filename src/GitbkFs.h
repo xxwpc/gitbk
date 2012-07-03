@@ -64,10 +64,7 @@ protected:
    virtual void onDirEnd( ) = 0;
    virtual void onComplete( );
 
-   static bool cmp( GitbkFs *, GitbkFs * );
-
    void subPush( GitbkFs * );
-   void subSort( );
    void onSubComplete( );
 
 protected:
