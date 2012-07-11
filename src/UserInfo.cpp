@@ -89,18 +89,25 @@ static void parse_file( UserInfo **arr, int *count, const char *file )
 
 
 
-static const char * get_name( const UserInfo *arr, int count, unsigned long id )
+static void get_name( const UserInfo *arr, int count, unsigned long id, char *name )
 {
    UserInfo k;
    k.id = id;
    UserInfo *p = static_cast< UserInfo * >( bsearch( &k, arr, count, sizeof(UserInfo), cmp_id ) );
-   return p->name;
+
+   if ( p != nullptr )
+      strcpy( name, p->name );
+   else
+      sprintf( name, "%lu", id );
 }
 
 
 
 static unsigned long get_id( const UserInfo *arr, int count, const char *name )
 {
+   if ( ( name[0] >= '0' ) && ( name[0] <= '9' ) )
+      return atol( name );
+
    for ( int i = 0; i < count; ++i )
       if ( strcmp( arr[i].name, name ) == 0 )
          return arr[i].id;
@@ -119,9 +126,9 @@ void user_info_init( )
 
 
 
-const char * user_name( uid_t id )
+void user_name( uid_t id, char *name )
 {
-   return get_name( s_userArr, s_userCount, static_cast< unsigned long >( id ) );
+   return get_name( s_userArr, s_userCount, static_cast< unsigned long >( id ), name );
 }
 
 
@@ -133,9 +140,9 @@ uid_t user_id( const char *name )
 
 
 
-const char * group_name( gid_t id )
+void group_name( gid_t id, char *name )
 {
-   return get_name( s_groupArr, s_groupCount, static_cast< unsigned long >( id ) );
+   return get_name( s_groupArr, s_groupCount, static_cast< unsigned long >( id ), name );
 }
 
 

@@ -23,9 +23,9 @@
 void user_info_init( );
 
 
-const char * user_name( uid_t );
+void user_name( uid_t, char * );
 uid_t user_id( const char * );
 
-const char * group_name( gid_t );
+void group_name( gid_t, char * );
 gid_t group_id( const char * );
 

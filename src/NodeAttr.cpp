@@ -84,8 +84,8 @@ bool NodeAttr::stat( const char *path )
 
    mode   = st.st_mode;
 
-   strcpy( user, user_name( st.st_uid ) );
-   strcpy( group, group_name( st.st_gid ) );
+   user_name( st.st_uid, user );
+   group_name( st.st_gid, group );
 
    mtime  = st.st_mtime;
    size   = st.st_size;
