@@ -50,28 +50,55 @@ static void delete_file( )
       na.hash.hash[3] = cstr[l+5];
       memcpy( na.hash.hash + 4, cstr+l+7, 60 );
 
-      if ( g_hash_set->find( na.hash ) == nullptr )
+      if ( g_hash_set->find( na.hash ) != nullptr )
+         continue;
+
+      int rm = unlink( path.c_str( ) );
+      int err = errno;
+      std::cout << "rm ";
+      std::cout.write( na.hash.hash, 64 );
+      if ( rm != 0 )
       {
-         unlink( path.c_str( ) );
-         std::cout << "delete " << *itr << std::endl;
+         std::cout << ' ';
+         std::cout << strerror( err );
       }
+      std::cout << std::endl;
    }
 }
 
 
 
-static void recursive_dir( const HashId &id )
+static unsigned long long s_object_count;
+
+
+static void recursive_record_dir( const HashId & );
+
+
+static void record_tree_file( InputFile &in )
+{
+   NodeAttr na;
+
+   while ( in.parseNodeAttr( &na ) )
+   {
+      if ( g_hash_set->find( na.hash ) != nullptr )
+         continue;
+
+      g_hash_set->insert( na.hash );
+      ++s_object_count;
+
+      if ( S_ISDIR(na.mode) )
+         recursive_record_dir( na.hash );
+   }
+}
+
+
+static void recursive_record_dir( const HashId &id )
 {
    InBz2File in( id );
 
    NodeAttr na;
 
-   while ( in.parseNodeAttr( &na ) )
-   {
-      g_hash_set->insert( na.hash );
-      if ( S_ISDIR(na.mode) )
-         recursive_dir( na.hash );
-   }
+   record_tree_file( in );
 }
 
 
@@ -90,13 +117,19 @@ static void recordAllHash( )
 
       InputFile in( itr->path( ).string( ) );
 
-      if ( in.parseNodeAttr( &na ) )
-      {
-         g_hash_set->insert( na.hash );
-         if ( S_ISDIR(na.mode) )
-            recursive_dir( na.hash );
-      }
+      record_tree_file( in );
    }
+}
+
+
+
+static void sigroutine( int signo )
+{
+   if ( signo != SIGALRM )
+      return;
+
+   std::cout << "\rCounting objects " << s_object_count << std::flush;
+   signal( SIGALRM, sigroutine );
 }
 
 
@@ -114,7 +147,20 @@ int pruneProc( const std::vector<std::string> &args )
 
    load_hash_set( false );
 
+   {
+      signal( SIGALRM, sigroutine );
+      static const struct itimerval v =
+      {
+         { 0, 50000 },
+         { 0, 50000 },
+      };
+      setitimer( ITIMER_REAL, &v, nullptr );
+   }
+
    recordAllHash( );
+
+   signal( SIGALRM, SIG_IGN );
+   std::cout << "\rCounting objects " << s_object_count << std::endl;
 
    if ( store_hash_set( false ) )
       delete_file( );

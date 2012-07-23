@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 #include <pwd.h>
 #include <grp.h>
 #include <fcntl.h>
@@ -28,6 +29,8 @@
 #include <openssl/sha.h>
 #include <utime.h>
 #include <utmp.h>
+#include <errno.h>
+#include <signal.h>
 
 #include <cstdio>
 #include <cstdint>
