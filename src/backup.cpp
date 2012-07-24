@@ -300,28 +300,10 @@ static bool getLastStore( std::string p, NodeAttr *attr )
 
 
 
-int backupProc( const std::vector<std::string> &args )
+static void backup( const std::string &origin_path )
 {
-   if ( args.size() < 3 )
-   {
-      std::cout << "gitbk backup src dest" << std::endl;
-      return 1;
-   }
+   std::string s( origin_path );
 
-   if ( !boost::filesystem::is_directory( args[1] ) )
-   {
-      std::cout << '\'' << args[1] << "' is not directory!" << std::endl;
-      return 1;
-   }
-
-   path_init( args[2] );
-
-   load_hash_set( );
-
-   hash_mutex = new boost::shared_mutex;
-   std::auto_ptr<boost::shared_mutex> mp( hash_mutex );
-
-   std::string s = args[1];
    if ( s[s.size()-1] == '/' )
       s.resize( s.size() - 1 );
 
@@ -339,6 +321,33 @@ int backupProc( const std::vector<std::string> &args )
    {
       std::cerr << "Can't stat " << s;
    }
+}
+
+
+
+static int backupProc( const std::vector<std::string> &args )
+{
+   if ( args.size() < 3 )
+   {
+      std::cout << "gitbk backup src dest" << std::endl;
+      return 1;
+   }
+
+   if ( !boost::filesystem::is_directory( args[1] ) )
+   {
+      std::cout << '\'' << args[1] << "' is not directory!" << std::endl;
+      return 1;
+   }
+
+   path_init( args[args.size()-1] );
+
+   load_hash_set( );
+
+   hash_mutex = new boost::shared_mutex;
+   std::auto_ptr<boost::shared_mutex> mp( hash_mutex );
+
+   for ( unsigned i = 1; i < args.size()-1; ++i )
+      backup( args[i] );
 
    free_hash_set( );
 
