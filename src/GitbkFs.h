@@ -29,6 +29,7 @@ class GitbkFs
 {
 public:
    GitbkFs( const NodeAttr &attr, const boost::filesystem::path & );
+   GitbkFs( const boost::filesystem::path & );
 
    virtual ~GitbkFs( );
 

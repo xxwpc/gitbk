@@ -30,39 +30,89 @@
 static void delete_file( )
 {
    auto obj_path = path_get( PathType::OBJ, nullptr );
-   unsigned l = obj_path.string( ).length( );
 
-   boost::filesystem::recursive_directory_iterator itr( obj_path );
-   boost::filesystem::recursive_directory_iterator end;
+   char path[PATH_MAX];
 
-   NodeAttr na;
+   HashId   id;
 
-   for ( ; itr != end; ++itr )
+   for ( int i = 0; i < 256; ++i )
    {
-      auto &path = itr->path( ).string( );
-      if ( ( path.length( ) - l ) != 67 )
+      char *dir_end1 = path + sprintf( path, "%s/%02x/", obj_path.c_str( ), i );
+
+      auto dir1 = ::opendir( path );
+      if ( dir1 == nullptr )
          continue;
 
-      const char *cstr = path.c_str( );
-      na.hash.hash[0] = cstr[l+1];
-      na.hash.hash[1] = cstr[l+2];
-      na.hash.hash[2] = cstr[l+4];
-      na.hash.hash[3] = cstr[l+5];
-      memcpy( na.hash.hash + 4, cstr+l+7, 60 );
+      int dir_fd1 = dirfd( dir1 );
 
-      if ( g_hash_set->find( na.hash ) != nullptr )
-         continue;
+      struct dirent  entry1, *pe1;
+      int            un_rm1 = 0;
 
-      int rm = unlink( path.c_str( ) );
-      int err = errno;
-      std::cout << "rm ";
-      std::cout.write( na.hash.hash, 64 );
-      if ( rm != 0 )
+      while ( ( ::readdir_r( dir1, &entry1, &pe1 ) == 0 ) && ( pe1 != nullptr ) )
       {
-         std::cout << ' ';
-         std::cout << strerror( err );
+         if ( !::isxdigit( entry1.d_name[0] ) || !::isxdigit( entry1.d_name[1] ) || ( entry1.d_name[2] != 0 ) )
+         {
+            ++un_rm1;
+            continue;
+         }
+
+         strcpy( dir_end1, entry1.d_name );
+         auto dir2 = ::opendir( path );
+         if ( dir2 == nullptr )
+         {
+            ++un_rm1;
+            continue;
+         }
+
+         int dir_fd2 = dirfd( dir2 );
+
+         struct dirent  entry2, *pe2;
+         int            un_rm2 = 0;
+
+         while ( ( ::readdir_r( dir2, &entry2, &pe2 ) == 0 ) && ( pe2 != nullptr ) )
+         {
+            if ( strlen( entry2.d_name ) != 60 )
+            {
+               ++un_rm2;
+               continue;
+            }
+
+            sprintf( id.hash, "%02x%s", i, entry1.d_name );
+            memcpy( id.hash + 4, entry2.d_name, 60 );
+
+            if ( g_hash_set->find( id ) != nullptr )
+            {
+               ++un_rm2;
+               continue;
+            }
+
+            int rm = unlinkat( dir_fd2, entry2.d_name, 0 );
+            int err = errno;
+            std::cout << "rm ";
+            std::cout.write( id.hash, 64 );
+            if ( rm != 0 )
+            {
+               std::cout << ' ';
+               std::cout << strerror( err );
+
+               ++un_rm2;
+            }
+            std::cout << std::endl;
+         }
+
+         ::closedir( dir2 );
+
+         if ( ( un_rm2 > 2 ) || unlinkat( dir_fd1, entry1.d_name, AT_REMOVEDIR ) )
+            ++un_rm1;
       }
-      std::cout << std::endl;
+
+      ::closedir( dir1 );
+
+      if ( un_rm1 <= 2 )
+      {
+         *dir_end1 = 0;
+         ::rmdir( path );
+      }
    }
 }
 

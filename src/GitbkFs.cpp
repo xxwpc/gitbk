@@ -36,6 +36,17 @@ GitbkFs::GitbkFs( const NodeAttr &attr, const boost::filesystem::path &path )
 
 
 
+GitbkFs::GitbkFs( const boost::filesystem::path &path )
+   : _path( path )
+   , _cnt( 0 )
+   , _first( true )
+   , _success( false )
+{
+   _attr.stat( path.c_str( ) );
+}
+
+
+
 GitbkFs::~GitbkFs( )
 {
 }

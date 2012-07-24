@@ -33,9 +33,9 @@ public:
       return top->attr( );
    }
 
-   const char * dir( ) const
+   const boost::filesystem::path &dir( ) const
    {
-      return _path.c_str( );
+      return _path;
    }
 
 protected:
