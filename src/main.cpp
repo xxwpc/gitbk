@@ -38,6 +38,8 @@ static void usage( )
 
 int main( int argc, char *argv[] )
 {
+   umask( 077 );
+
    std::vector<std::string>   args;
 
 #ifdef _DEBUG
