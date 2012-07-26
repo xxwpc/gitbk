@@ -42,7 +42,7 @@ static void mt_run( )
       pthread_mutex_lock( &list_mutex );
       GitbkFs *r = list_head;
       if ( r != NULL )
-	 list_head = list_head->next;
+         list_head = list_head->next;
       pthread_mutex_unlock( &list_mutex );
 
       if ( r == NULL )

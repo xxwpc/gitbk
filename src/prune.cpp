@@ -27,7 +27,13 @@
 
 
 
-static void delete_file( )
+static boost::detail::atomic_count count_found( 0 );
+static boost::detail::atomic_count count_removed( 0 );
+static boost::detail::atomic_count count_threads( 0 );
+
+
+
+static void delete_file( int first, int last )
 {
    auto obj_path = path_get( PathType::OBJ, nullptr );
 
@@ -35,7 +41,7 @@ static void delete_file( )
 
    HashId   id;
 
-   for ( int i = 0; i < 256; ++i )
+   for ( int i = first; i < last; ++i )
    {
       char *dir_end1 = path + sprintf( path, "%s/%02x/", obj_path.c_str( ), i );
 
@@ -71,11 +77,13 @@ static void delete_file( )
 
          while ( ( ::readdir_r( dir2, &entry2, &pe2 ) == 0 ) && ( pe2 != nullptr ) )
          {
-            if ( strlen( entry2.d_name ) != 60 )
+            if ( !( entry2.d_type & DT_REG ) && ( strlen( entry2.d_name ) != 60 ) )
             {
                ++un_rm2;
                continue;
             }
+
+            ++count_found;
 
             sprintf( id.hash, "%02x%s", i, entry1.d_name );
             memcpy( id.hash + 4, entry2.d_name, 60 );
@@ -88,16 +96,28 @@ static void delete_file( )
 
             int rm = unlinkat( dir_fd2, entry2.d_name, 0 );
             int err = errno;
-            std::cout << "rm ";
-            std::cout.write( id.hash, 64 );
+
+
+            if ( rm == 0 )
+               ++count_removed;
+            else
+               ++un_rm2;
+
+            if ( rm == 0 )
+               continue;
+
+            std::stringstream oss;
+            oss << "\rrm ";
+            oss.write( id.hash, 64 );
             if ( rm != 0 )
             {
-               std::cout << ' ';
-               std::cout << strerror( err );
-
-               ++un_rm2;
+               oss << ' ';
+               oss << strerror( err );
             }
-            std::cout << std::endl;
+
+            oss << std::endl;
+
+            verbose( oss.str().c_str() );
          }
 
          ::closedir( dir2 );
@@ -114,6 +134,8 @@ static void delete_file( )
          ::rmdir( path );
       }
    }
+
+   --count_threads;
 }
 
 
@@ -184,6 +206,21 @@ static void sigroutine( int signo )
 
 
 
+static void remove_process( )
+{
+   long threads;
+
+   do
+   {
+      threads = count_threads;
+      verbose( "\rfound %ld, removed %ld", (long)count_found, (long)count_removed );
+      fflush( stdout );
+      ::usleep( 50000 );
+   } while ( threads );
+}
+
+
+
 int pruneProc( const std::vector<std::string> &args )
 {
    if ( args.size() < 2 )
@@ -213,7 +250,22 @@ int pruneProc( const std::vector<std::string> &args )
    std::cout << "\rCounting objects " << s_object_count << std::endl;
 
    if ( store_hash_set( false ) )
-      delete_file( );
+   {
+      const int n = sysconf( _SC_NPROCESSORS_ONLN );
+
+      for ( int i = 0; i < n; ++i )
+         ++count_threads;
+
+      boost::thread_group tgroup;
+      for ( int i = 0; i < n; ++i )
+         tgroup.create_thread( boost::bind(&delete_file, 256*i/n, (256*(i+1)/n) ) );
+
+      tgroup.create_thread( &remove_process );
+
+      tgroup.join_all( );
+
+      printf( "\n" );
+   }
 
    free_hash_set( );
 
